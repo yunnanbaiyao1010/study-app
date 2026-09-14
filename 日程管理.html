@@ -1,0 +1,2231 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FAF7F2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="日程管理">
+<link rel="manifest" href='data:application/json,{"name":"日程管理","short_name":"日程管理","start_url":".","display":"standalone","background_color":"#FAF7F2","theme_color":"#FAF7F2","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjgwIiBmaWxsPSIjRkFGN0YyIi8+PHRleHQgeD0iMjU2IiB5PSIzMjAiIGZvbnQtc2l6ZT0iMjQwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjRTg0QjNDIj7lmY48L3RleHQ+PC9zdmc+","sizes":"512x512","type":"image/svg+xml"}]}'>
+<title>日程管理</title>
+<style>
+:root{
+  --accent:#E84B3C;
+  --bg:#FAF7F2;
+  --text:#1A1A1A;
+  --muted:#8A8A8A;
+  --light:#EEEEEE;
+  --border:#E8E8E8;
+  --green:#22C55E;
+  --orange:#F59E0B;
+  --red:#EF4444;
+  --purple:#8B5CF6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+
+/* ===== Layout ===== */
+.app{max-width:480px;margin:0 auto;min-height:100vh;padding:0 24px}
+
+/* ===== Top Bar (formerly sidebar) ===== */
+.sidebar{position:static;height:auto;background:transparent;color:var(--text);padding:24px 0 0;overflow:visible}
+.sidebar h1{display:none}
+.sidebar .sub{display:none}
+.clock{text-align:center;padding:0;border:none;margin-bottom:0}
+.clock .time{font-size:28px;font-weight:300;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:2px}
+.clock .date{font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+.nav{display:none}
+.week-progress{display:none}
+.streak-box{display:none}
+
+/* ===== Main Content ===== */
+.main{padding:0;max-width:100%;margin:0}
+
+/* ===== Current Task ===== */
+.current-task{background:#FFF;color:var(--text);border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid #F0EDE8;border-left:3px solid var(--accent)}
+.current-task .icon{font-size:0;display:none}
+.current-task .info{flex:1}
+.current-task .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:500}
+.current-task .task-name{font-size:16px;font-weight:600;margin-top:3px;color:var(--text)}
+.current-task .countdown{font-size:12px;color:var(--muted);margin-top:2px}
+.current-task .timer{font-size:0;background:transparent;padding:0;border-radius:0;color:var(--accent);font-weight:600}
+
+/* ===== Section Cards (subtle) ===== */
+.card{background:#FFF;border-radius:12px;padding:18px 16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid #F0EDE8}
+.card h2{font-size:14px;color:var(--text);margin-bottom:14px;padding:0;border:none;font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.card h2::before{content:'';display:inline-block;width:3px;height:14px;background:var(--accent);border-radius:2px;flex-shrink:0}
+
+/* ===== Timeline ===== */
+.timeline-item{display:flex;gap:16px;padding:12px 0;border:none;position:relative}
+.timeline-item::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:1px;background:var(--border)}
+.timeline-item:first-child::before{top:50%}
+.timeline-item:last-child::before{bottom:50%}
+.timeline-item:first-child::before{top:20px}
+.timeline-item:last-child::before{bottom:20px}
+.timeline-item .time-col{width:70px;font-size:12px;font-weight:500;color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums;padding-left:0}
+.timeline-item .content-col{flex:1;font-size:14px;color:var(--text);position:relative;padding-left:14px}
+.timeline-item .content-col::before{content:'';position:absolute;left:0;top:6px;width:8px;height:8px;border-radius:50%;background:var(--border);border:2px solid var(--bg);z-index:1}
+.timeline-item.now .content-col::before{background:var(--accent);border-color:var(--bg)}
+.timeline-item.now .content-col{color:var(--accent);font-weight:600}
+.timeline-item.now .time-col{color:var(--accent)}
+.timeline-item.done{opacity:.35}
+.timeline-item.done .content-col{text-decoration:line-through}
+.timeline-item.done .content-col::before{background:var(--muted)}
+.timeline-item.upcoming .time-col{color:var(--muted)}
+.timeline-item .tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:999px;margin-right:6px;font-weight:500;border:1px solid}
+.tag-class{border-color:#D1D5DB;color:#6B7280;background:transparent}
+.tag-math{border-color:#FECACA;color:#DC2626;background:transparent}
+.tag-ds{border-color:#D1FAE5;color:#059669;background:transparent}
+.tag-en{border-color:#FEF3C7;color:#D97706;background:transparent}
+.tag-hw{border-color:#FED7AA;color:#EA580C;background:transparent}
+.tag-rest{border-color:#E5E7EB;color:#9CA3AF;background:transparent}
+.tag-free{border-color:#E5E7EB;color:#9CA3AF;background:transparent}
+
+/* ===== Phase Selector ===== */
+.phase-bar{display:flex;gap:4px;margin-bottom:12px;background:#FFF;border-radius:10px;padding:4px;border:1px solid #F0EDE8}
+.phase-bar button{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12px;color:var(--muted);transition:all .15s;font-weight:500}
+.phase-bar button.active{color:#fff;background:var(--accent);font-weight:600}
+.phase-bar button:hover:not(.active){color:var(--text);background:#F5F2ED}
+
+/* ===== Day Tabs ===== */
+.day-tabs{display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap}
+.day-tabs button{padding:8px 12px;border:none;background:transparent;border-radius:0;cursor:pointer;font-size:13px;color:var(--muted);transition:color .15s;border-bottom:2px solid transparent}
+.day-tabs button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.day-tabs button:hover:not(.active){color:var(--text)}
+.day-tabs button.today{color:var(--accent)}
+
+/* ===== Tomorrow Prep ===== */
+.prep-list{list-style:none}
+.prep-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border:none;border-bottom:1px solid var(--border)}
+.prep-item:last-child{border-bottom:none}
+.prep-item input[type=checkbox]{width:16px;height:16px;margin-top:3px;cursor:pointer;flex-shrink:0;accent-color:var(--accent)}
+.prep-item label{font-size:14px;cursor:pointer;flex:1;color:var(--text)}
+.prep-item input[type=checkbox]:checked+label{text-decoration:line-through;opacity:.4}
+.prep-item input[type=text]{font-size:14px;border:none;border-bottom:1px solid var(--border);background:transparent;border-radius:0;padding:6px 0}
+.prep-item input[type=text]:focus{outline:none;border-bottom-color:var(--accent)}
+
+/* ===== Log ===== */
+.log-area{width:100%;min-height:160px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;line-height:1.7;background:#FAF7F2;color:var(--text)}
+.log-area:focus{outline:none;border-color:var(--accent);background:#FFF}
+.log-meta{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.log-meta select,.log-meta input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#FAF7F2;color:var(--text)}
+.log-meta select:focus,.log-meta input:focus{outline:none;border-color:var(--accent)}
+.log-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.log-tag-btn{padding:4px 12px;border:1px solid var(--border);background:transparent;border-radius:999px;cursor:pointer;font-size:12px;transition:all .15s;color:var(--muted)}
+.log-tag-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.log-tag-btn:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+.log-save{padding:8px 24px;background:var(--accent);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px;font-weight:500;transition:opacity .15s}
+.log-save:hover{opacity:.85}
+.log-save:disabled{background:var(--muted);cursor:not-allowed}
+.log-history{margin-top:24px}
+.log-entry{background:transparent;border-radius:0;padding:14px 0;margin-bottom:0;border:none;border-left:2px solid var(--accent);padding-left:14px;margin-bottom:16px}
+.log-entry .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.log-entry .date{font-size:13px;font-weight:600;color:var(--text)}
+.log-entry .tags{display:flex;gap:4px}
+.log-entry .tag-mini{font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid}
+.log-entry .content{font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.7}
+.log-entry .del{font-size:11px;color:var(--red);cursor:pointer;background:none;border:none;padding:0 0 0 8px}
+.log-entry .del:hover{text-decoration:underline}
+
+/* ===== Stats ===== */
+.stat-grid{display:flex;gap:8px;margin-bottom:16px}
+.stat-card{flex:1;text-align:center;padding:14px 4px;background:#FAF7F2;border-radius:10px;border:1px solid #F0EDE8}
+.stat-card .num{font-size:24px;font-weight:300;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-card .label{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px}
+.stat-card.math .num{color:var(--accent)}
+.stat-card.ds .num{color:var(--green)}
+.stat-card.en .num{color:var(--orange)}
+
+/* ===== Notification ===== */
+.notification-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;animation:overlayIn .2s}
+.notification{position:relative;background:#FFF;color:var(--text);padding:28px 22px 20px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.25);max-width:340px;width:85%;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+.notification .title{font-size:17px;font-weight:600;margin-bottom:6px;color:var(--accent)}
+.notification .body{font-size:14px;color:var(--muted);line-height:1.5}
+.notification .close{display:block;margin:18px auto 0;padding:9px 40px;background:var(--accent);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:14px;font-weight:500;transition:opacity .15s}
+.notification .close:active{transform:scale(.97)}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+
+/* ===== Empty State ===== */
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+.empty .ico{font-size:32px;opacity:.2;margin-bottom:8px}
+
+/* ===== Streak Banner ===== */
+.streak-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#FFF;color:var(--text);border-radius:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid #F0EDE8}
+.streak-banner-main{font-size:18px;font-weight:600;white-space:nowrap;color:var(--text)}
+.streak-banner-sub{font-size:12px;color:var(--muted);flex:1}
+.streak-banner-best{font-size:11px;color:var(--muted);white-space:nowrap}
+.streak-banner.hot .streak-banner-main{color:var(--accent)}
+.streak-banner.hot{border-left:3px solid var(--accent)}
+
+/* ===== Timer ===== */
+.timer-ring-wrap{position:relative;width:180px;height:180px;margin:8px auto 16px}
+.timer-ring-bg{fill:none;stroke:#F0EDE8;stroke-width:6}
+.timer-ring-fg{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .3s ease}
+.timer-display{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;font-size:32px;font-weight:300;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:2px}
+.timer-display .timer-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.timer-subject-row{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.timer-select{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:140px;background:#FAF7F2;color:var(--text)}
+.timer-select:focus{outline:none;border-color:var(--accent)}
+.pomo-toggle{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;color:var(--muted)}
+.pomo-toggle input{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
+.timer-controls{display:flex;gap:8px}
+.timer-btn{flex:1;padding:10px;border:1px solid var(--border);background:#FAF7F2;border-radius:999px;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;color:var(--text)}
+.timer-btn.start{background:var(--accent);color:#fff;border-color:var(--accent)}
+.timer-btn.pause{border-color:var(--orange);color:var(--orange)}
+.timer-btn.stop{border-color:var(--red);color:var(--red)}
+.timer-btn:active{transform:scale(.97)}
+.pomo-status{text-align:center;font-size:12px;padding:8px;margin-top:8px;background:#FAF7F2;color:var(--muted);border-radius:8px}
+.timer-card-active{border-color:var(--accent)!important}
+
+/* ===== Weekly Progress Bar ===== */
+.week-progress-mini{margin-bottom:12px}
+.week-progress-mini .label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.week-progress-mini .label{font-size:12px;color:var(--muted);font-weight:500}
+.week-progress-mini .value{font-size:14px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.week-progress-mini .value span{color:var(--muted);font-weight:400;font-size:12px}
+.week-progress-track{height:6px;background:#F0EDE8;border-radius:3px;overflow:hidden}
+.week-progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .4s ease}
+
+/* ===== Stats Bar Chart ===== */
+.bar-chart{display:flex;gap:6px;align-items:flex-end;height:80px;margin:12px 0}
+.bar-chart .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar-chart .bar{width:100%;max-width:24px;border-radius:3px 3px 0 0;min-height:3px;transition:height .3s ease}
+.bar-chart .bar-day{font-size:9px;color:var(--muted);text-transform:uppercase}
+.bar-chart .bar-val{font-size:9px;color:var(--text);font-weight:600}
+
+/* ===== Timeline Dot ===== */
+.timeline-item .subject-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dot-math{background:#E84B3C}
+.dot-ds{background:#22C55E}
+.dot-en{background:#F59E0B}
+.dot-hw{background:#8B5CF6}
+.dot-class{background:#6B7280}
+.dot-rest{background:#D1D5DB}
+.dot-free{background:#D1D5DB}
+.timeline-item .duration{font-size:11px;color:var(--muted);margin-left:6px}
+
+/* ===== Bottom Nav ===== */
+.bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:#FFF;z-index:100;padding:6px 0;padding-bottom:calc(6px + env(safe-area-inset-bottom));box-shadow:0 -1px 8px rgba(0,0,0,.04);max-width:480px;margin:0 auto;justify-content:space-around}
+.bottom-nav button{background:transparent;border:none;color:var(--muted);flex:1;display:flex;flex-direction:column;align-items:center;gap:0;padding:8px 2px;cursor:pointer;font-size:11px;transition:color .15s;position:relative}
+.bottom-nav button .ico{font-size:0;display:none}
+.bottom-nav button.active{color:var(--accent);font-weight:600}
+.bottom-nav button.active::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:2px;background:var(--accent);border-radius:1px}
+.bottom-nav button:hover:not(.active){color:var(--text)}
+
+/* ===== Responsive ===== */
+@media(max-width:900px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+  .sidebar{position:static;height:auto;grid-row:1;padding:24px 0 0}
+  .sidebar .nav{display:none}
+  .sidebar .week-progress{display:none}
+  .sidebar .streak-box{display:none}
+  .main{grid-row:2;padding:0 0 70px;max-width:100%}
+  .bottom-nav{display:flex}
+  .clock .time{font-size:28px}
+  .clock{padding:0}
+  .current-task{padding:16px 0}
+  .current-task .task-name{font-size:15px}
+  .timeline-item .time-col{width:60px;font-size:11px}
+  .timeline-item .content-col{font-size:13px}
+  .stat-grid{flex-direction:row}
+  .stat-card{padding:10px 4px}
+  .stat-card .num{font-size:18px}
+  .phase-bar{flex-wrap:wrap}
+  .phase-bar button{font-size:11px;padding:6px 4px}
+  .day-tabs button{padding:6px 10px;font-size:12px}
+  .notification{width:88%}
+  .log-area{min-height:140px;font-size:14px}
+  .prep-item input[type=text]{font-size:14px}
+  #timeMinutes,#timeNote{font-size:14px}
+  .timer-display{font-size:32px}
+  .timer-btn{padding:8px 6px;font-size:13px}
+  .timer-subject-row{flex-direction:column;align-items:stretch}
+  .timer-select{min-width:0}
+  #syncCodeOut,#syncCodeIn{font-size:10px}
+  .streak-banner-main{font-size:14px}
+}
+@media(max-width:400px){
+  .stat-card .num{font-size:16px}
+  .stat-card .label{font-size:9px}
+  .phase-bar button{font-size:10px;padding:5px 2px}
+  .current-task .task-name{font-size:14px}
+  .timer-display{font-size:28px}
+}
+@media(min-width:901px){
+  .app{padding:0 24px}
+  .bottom-nav{display:flex}
+  .sidebar .nav{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <h1>日程管理</h1>
+    <div class="sub">考研助手</div>
+    <div class="clock">
+      <div class="time" id="clockTime">--:--:--</div>
+      <div class="date" id="clockDate">加载中...</div>
+    </div>
+    <div class="nav">
+      <button class="active" onclick="showPage('today')">今日</button>
+      <button onclick="showPage('tomorrow')">明日</button>
+      <button onclick="showPage('week')">本周</button>
+      <button onclick="showPage('log')">日志</button>
+      <button onclick="showPage('stats')">统计</button>
+      <button onclick="showPage('settings')">设置</button>
+    </div>
+    <div class="week-progress">
+      <div class="label">本周考研进度</div>
+      <div class="progress-bar"><div class="progress-fill" id="weekProgress" style="width:0%"></div></div>
+      <div class="stats">
+        <span id="weekDone">0h / 26h</span>
+        <span id="weekPct">0%</span>
+      </div>
+    </div>
+    <div class="streak-box" id="streakBox">
+      <div class="streak-main" id="streakMain">0天</div>
+      <div class="streak-sub" id="streakSub">今日未打卡</div>
+      <div class="streak-best" id="streakBest">最高纪录：0天</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="current-task" id="currentTaskBanner">
+      <div class="icon" id="currentTaskIcon"></div>
+      <div class="info">
+        <div class="label">当前 / 即将</div>
+        <div class="task-name" id="currentTaskName">加载中...</div>
+        <div class="countdown" id="currentTaskCountdown">--</div>
+      </div>
+      <div class="timer" id="currentTaskTimer">--</div>
+    </div>
+
+    <div id="page-today" class="page">
+      <div class="phase-bar" id="phaseBar">
+        <button id="phase-p1" onclick="setPhase(1)">P1</button>
+        <button id="phase-p2" onclick="setPhase(2)">P2</button>
+        <button id="phase-p3" onclick="setPhase(3)">P3</button>
+        <button id="phase-p4" onclick="setPhase(4)">P4</button>
+      </div>
+      <div id="weekIndicator" style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:16px;padding:4px 0"></div>
+
+      <div class="streak-banner" id="streakBanner">
+        <div class="streak-banner-main" id="streakBannerMain">0天连续</div>
+        <div class="streak-banner-sub" id="streakBannerSub">今日未打卡</div>
+        <div class="streak-banner-best" id="streakBannerBest">最高 0天</div>
+      </div>
+
+      <div class="week-progress-mini" id="weekProgressMini" style="padding:0 4px;margin-bottom:12px">
+        <div class="label-row">
+          <span class="label">本周考研进度</span>
+          <span class="value" id="weekMiniValue">0h <span>/ 26h</span></span>
+        </div>
+        <div class="week-progress-track">
+          <div class="week-progress-fill" id="weekMiniFill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="card" id="timerCard">
+        <h2>计时器</h2>
+        <div class="timer-ring-wrap">
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <circle class="timer-ring-bg" cx="90" cy="90" r="82"/>
+            <circle class="timer-ring-fg" id="timerRingFg" cx="90" cy="90" r="82" stroke-dasharray="515.2" stroke-dashoffset="515.2" transform="rotate(-90 90 90)"/>
+          </svg>
+          <div class="timer-display" id="timerDisplay">00:00:00</div>
+        </div>
+        <div class="timer-subject-row">
+          <select id="timerSubject" class="timer-select">
+            <option value="math">数学</option>
+            <option value="ds">408数据结构</option>
+            <option value="en">英语</option>
+          </select>
+          <label class="pomo-toggle">
+            <input type="checkbox" id="pomoMode" onchange="togglePomo(this)">
+            <span>番茄钟 25min</span>
+          </label>
+        </div>
+        <div class="timer-controls">
+          <button class="timer-btn start" id="timerStart" onclick="timerStart()">开始</button>
+          <button class="timer-btn pause" id="timerPause" onclick="timerPause()" style="display:none">暂停</button>
+          <button class="timer-btn stop" id="timerStop" onclick="timerStop()" style="display:none">停止并记录</button>
+        </div>
+        <div class="pomo-status" id="pomoStatus" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <h2 id="todayTitle">今日日程</h2>
+        <div id="todayTimeline"></div>
+      </div>
+    </div>
+
+    <div id="page-tomorrow" class="page" style="display:none">
+      <div class="card">
+        <h2>明日准备</h2>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px" id="tomorrowDate"></p>
+        <div id="tomorrowSchedule" style="margin-bottom:20px"></div>
+        <h3 style="font-size:12px;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px;font-weight:500">需要提前准备的</h3>
+        <ul class="prep-list" id="tomorrowPrep"></ul>
+      </div>
+    </div>
+
+    <div id="page-week" class="page" style="display:none">
+      <div class="card">
+        <h2>本周日程</h2>
+        <div class="day-tabs" id="weekDayTabs"></div>
+        <div id="weekTimeline"></div>
+      </div>
+    </div>
+
+    <div id="page-log" class="page" style="display:none">
+      <div class="card">
+        <h2>学习日志</h2>
+        <div class="log-meta">
+          <select id="logDate">
+            <option value="">今天</option>
+          </select>
+          <input type="text" id="logTitle" placeholder="标题（可选）" style="flex:1;min-width:200px">
+        </div>
+        <div class="log-tags" id="logTags">
+          <button class="log-tag-btn" onclick="toggleLogTag(this)" data-tag="数学">数学</button>
+          <button class="log-tag-btn" onclick="toggleLogTag(this)" data-tag="408">408数据结构</button>
+          <button class="log-tag-btn" onclick="toggleLogTag(this)" data-tag="英语">英语</button>
+          <button class="log-tag-btn" onclick="toggleLogTag(this)" data-tag="作业">课程作业</button>
+          <button class="log-tag-btn" onclick="toggleLogTag(this)" data-tag="复盘">错题复盘</button>
+          <button class="log-tag-btn" onclick="toggleLogTag(this)" data-tag="其他">其他</button>
+        </div>
+        <textarea class="log-area" id="logContent" placeholder="今天学了什么？做了什么？有什么收获和问题？&#10;&#10;例如：&#10;数学：复习了高数第三章中值定理，做了10道题，3道不会&#10;408：手写链表反转和二叉树层序遍历&#10;英语：背了60个单词，做了2篇阅读精读&#10;作业：写完了数据库实验报告"></textarea>
+        <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+          <button class="log-save" id="logSave" onclick="saveLog()">保存日志</button>
+          <span style="font-size:12px;color:var(--muted)" id="logSavedHint"></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>历史日志</h2>
+        <div id="logHistory"></div>
+      </div>
+    </div>
+
+    <div id="page-stats" class="page" style="display:none">
+      <div class="card">
+        <h2>记录学习时长</h2>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px">手动录入每天每个科目的实际学习时长，统计和热力图会自动更新。</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">日期</label>
+            <input type="date" id="timeDate" style="padding:6px 0;border:none;border-bottom:1px solid var(--border);border-radius:0;font-size:13px;background:transparent;color:var(--text)">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">科目</label>
+            <select id="timeSubject" style="padding:6px 0;border:none;border-bottom:1px solid var(--border);border-radius:0;font-size:13px;background:transparent;color:var(--text)">
+              <option value="math">数学</option>
+              <option value="ds">408数据结构</option>
+              <option value="en">英语</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">时长（分钟）</label>
+            <input type="number" id="timeMinutes" placeholder="如 90" min="5" max="600" style="width:90px;padding:6px 0;border:none;border-bottom:1px solid var(--border);border-radius:0;font-size:13px;background:transparent;color:var(--text)">
+          </div>
+          <div style="flex:1;min-width:150px">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">备注</label>
+            <input type="text" id="timeNote" placeholder="如：高数第三章刷题" style="width:100%;padding:6px 0;border:none;border-bottom:1px solid var(--border);border-radius:0;font-size:13px;background:transparent;color:var(--text)">
+          </div>
+          <button onclick="addTimeEntry()" style="padding:7px 18px;background:var(--accent);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">添加</button>
+        </div>
+        <div id="timeEntryList" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h2>本周统计</h2>
+        <div class="stat-grid">
+          <div class="stat-card math"><div class="num" id="statMath">0h</div><div class="label">数学</div></div>
+          <div class="stat-card ds"><div class="num" id="statDS">0h</div><div class="label">408</div></div>
+          <div class="stat-card en"><div class="num" id="statEN">0h</div><div class="label">英语</div></div>
+        </div>
+        <div id="statsDetail"></div>
+        <div class="bar-chart" id="weekBarChart" style="margin-top:16px"></div>
+      </div>
+      <div class="card">
+        <h2>学习热力图 · 近30天</h2>
+        <div id="heatmap" style="display:flex;flex-wrap:wrap;gap:3px"></div>
+      </div>
+    </div>
+
+    <div id="page-settings" class="page" style="display:none">
+      <div class="card">
+        <h2>设置</h2>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
+            <input type="checkbox" id="setNotify" checked onchange="toggleNotify(this)" style="width:16px;height:16px;accent-color:var(--accent)">
+            <span>开启定时提醒</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
+            <input type="checkbox" id="setSound" checked onchange="toggleSound(this)" style="width:16px;height:16px;accent-color:var(--accent)">
+            <span>开启提醒声音</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
+            <input type="checkbox" id="setAutoPhase" checked onchange="toggleAutoPhase(this)" style="width:16px;height:16px;accent-color:var(--accent)">
+            <span>自动切换阶段（按周数）</span>
+          </label>
+          <div style="font-size:14px">
+            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">学期起始日</label>
+            <input type="date" id="setSemesterStart" onchange="saveSemesterStart(this)" style="padding:6px 0;border:none;border-bottom:1px solid var(--border);border-radius:0;font-size:13px;background:transparent;color:var(--text)">
+          </div>
+          <div style="font-size:14px">
+            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--muted)">当前周数：<b id="currentWeekNum">--</b></label>
+            <button onclick="updateWeekNum()" style="padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:999px;cursor:pointer;font-size:12px">刷新</button>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button onclick="exportData()" style="padding:8px 16px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:999px;cursor:pointer;font-size:13px">导出备份</button>
+            <button onclick="importData()" style="padding:8px 16px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:999px;cursor:pointer;font-size:13px">导入数据</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>跨设备同步</h2>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px">用同步码在手机和电脑间传输数据。</p>
+        <div style="margin-bottom:16px">
+          <button onclick="exportSyncCode()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:999px;cursor:pointer;font-size:13px;width:100%;margin-bottom:8px">生成同步码</button>
+          <textarea id="syncCodeOut" placeholder="点击上方按钮生成同步码..." style="width:100%;min-height:70px;border:1px solid var(--border);border-radius:4px;padding:10px;font-size:10px;font-family:monospace;resize:vertical;background:transparent;color:var(--text)" readonly></textarea>
+          <button onclick="copySyncCode()" style="padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:999px;cursor:pointer;font-size:12px;margin-top:6px">复制</button>
+          <span id="syncCopiedHint" style="font-size:12px;color:var(--green);margin-left:8px"></span>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">从其他设备粘贴同步码</label>
+          <textarea id="syncCodeIn" placeholder="在此粘贴同步码..." style="width:100%;min-height:70px;border:1px solid var(--border);border-radius:4px;padding:10px;font-size:10px;font-family:monospace;resize:vertical;background:transparent;color:var(--text)"></textarea>
+          <button onclick="importSyncCode()" style="padding:6px 14px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:999px;cursor:pointer;font-size:12px;margin-top:6px">导入</button>
+          <span id="syncImportHint" style="font-size:12px;color:var(--muted);margin-left:8px"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav" id="bottomNav">
+  <button class="active" onclick="showPage('today')">今日</button>
+  <button onclick="showPage('tomorrow')">明日</button>
+  <button onclick="showPage('log')">日志</button>
+  <button onclick="showPage('stats')">统计</button>
+  <button onclick="showPage('settings')">设置</button>
+</div>
+
+
+<script>
+// ============================================================
+//  SCHEDULE DATA — 4 Phases, 7 days each
+//  Each item: {time:"HH:MM", dur:minutes, name:"", type:"", prep:[]}
+// ============================================================
+
+const SCHEDULES = {
+  // ---- Phase 1: 第1周 (应用写作未开始) ----
+  1: {
+    name:"P1·第1周", weeks:[1],
+    mon:[
+      {time:"08:00",dur:240,name:"Qt核心技术开发基础",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:30,name:"碎片：背单词",type:"en"},
+      {time:"18:00",dur:60,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（Qt优先）",type:"hw"},
+      {time:"20:40",dur:60,name:"英语：单词+阅读精读",type:"en"},
+      {time:"22:00",dur:0,name:"休息",type:"rest"},
+    ],
+    tue:[
+      {time:"08:00",dur:240,name:"数据库应用开发",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:90,name:"408数据结构复习/刷题",type:"ds"},
+      {time:"18:00",dur:60,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（数据库）",type:"hw"},
+      {time:"20:40",dur:100,name:"数学：高数/线代",type:"math"},
+    ],
+    wed:[
+      {time:"09:00",dur:150,name:"数学：高数听课+刷题",type:"math"},
+      {time:"12:00",dur:90,name:"午饭+午休",type:"rest"},
+      {time:"14:00",dur:100,name:"Qt核心技术开发基础",type:"class",loc:"四维东214-1"},
+      {time:"16:00",dur:120,name:"课后整理/碎片背单词",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（Qt，量少）",type:"hw"},
+      {time:"20:40",dur:100,name:"英语：单词+阅读精读2篇",type:"en"},
+    ],
+    thu:[
+      {time:"09:00",dur:60,name:"写AI大模型作业",type:"hw"},
+      {time:"10:00",dur:90,name:"数学：线代听课/刷题",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+午休蓄能",type:"rest"},
+      {time:"14:00",dur:220,name:"AI大模型应用开发",type:"class",loc:"仁爱214"},
+      {time:"18:00",dur:80,name:"晚饭+休息",type:"rest"},
+      {time:"20:40",dur:60,name:"408数据结构轻量复习",type:"ds"},
+      {time:"22:00",dur:0,name:"休息",type:"rest"},
+    ],
+    fri:[
+      {time:"08:00",dur:240,name:"C++高级开发",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:90,name:"408数据结构手写算法/刷题",type:"ds"},
+      {time:"18:00",dur:60,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（C++）",type:"hw"},
+      {time:"20:40",dur:100,name:"轮换：数学/数据结构",type:"math"},
+    ],
+    sat:[
+      {time:"08:30",dur:180,name:"数学：高数/线代听课+刷题",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"408数据结构课本+手写算法",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/自由",type:"rest"},
+      {time:"19:00",dur:120,name:"英语阅读精读+单词复盘",type:"en"},
+    ],
+    sun:[
+      {time:"08:30",dur:150,name:"数学：本周错题复盘+补弱",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"数据结构刷题+LeetCode简单2-3道",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/机动",type:"rest"},
+      {time:"19:00",dur:90,name:"英语复盘+规划下周",type:"en"},
+    ],
+  },
+
+  // ---- Phase 2: 第2-8周 (稳定期) ----
+  2: {
+    name:"P2·第2-8周", weeks:[2,3,4,5,6,7,8],
+    mon:[
+      {time:"08:00",dur:240,name:"Qt核心技术开发基础",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:35,name:"碎片：背单词+阅读精读",type:"en"},
+      {time:"16:00",dur:100,name:"应用写作",type:"class",loc:"仁爱107"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（Qt优先，其次写作）",type:"hw"},
+      {time:"20:40",dur:60,name:"英语：单词复习+阅读精读1篇",type:"en"},
+      {time:"22:00",dur:0,name:"最累的一天早睡",type:"rest"},
+    ],
+    tue:[
+      {time:"08:00",dur:240,name:"数据库应用开发",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:90,name:"408数据结构复习/刷题",type:"ds"},
+      {time:"16:00",dur:120,name:"休息/碎片背单词",type:"rest"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（数据库实验）",type:"hw"},
+      {time:"20:40",dur:100,name:"数学：高数/线代",type:"math"},
+    ],
+    wed:[
+      {time:"09:00",dur:150,name:"数学：高数听课+刷题（黄金时段）",type:"math"},
+      {time:"12:00",dur:90,name:"午饭+午休",type:"rest"},
+      {time:"14:00",dur:100,name:"Qt核心技术开发基础",type:"class",loc:"四维东214-1"},
+      {time:"16:00",dur:120,name:"课后整理/碎片背单词",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（Qt，量少）",type:"hw"},
+      {time:"20:40",dur:100,name:"英语：单词+阅读精读2篇",type:"en"},
+    ],
+    thu:[
+      {time:"09:00",dur:60,name:"写AI大模型作业（前置）",type:"hw"},
+      {time:"10:00",dur:90,name:"数学：线代听课/刷题",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+午休蓄能",type:"rest"},
+      {time:"14:00",dur:220,name:"AI大模型应用开发",type:"class",loc:"仁爱214"},
+      {time:"18:00",dur:80,name:"晚饭+休息",type:"rest"},
+      {time:"20:40",dur:60,name:"408数据结构轻量复习（不上新课）",type:"ds"},
+      {time:"22:00",dur:0,name:"休息",type:"rest"},
+    ],
+    fri:[
+      {time:"08:00",dur:240,name:"C++高级开发",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:90,name:"408数据结构手写算法/刷题",type:"ds"},
+      {time:"16:00",dur:120,name:"休息/碎片背单词",type:"rest"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（C++）",type:"hw"},
+      {time:"20:40",dur:100,name:"轮换：数学/数据结构（哪科慢学哪科）",type:"math"},
+    ],
+    sat:[
+      {time:"08:30",dur:180,name:"数学：高数/线代听课+刷题",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"408数据结构课本+手写算法",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/自由",type:"rest"},
+      {time:"19:00",dur:120,name:"英语阅读精读+单词复盘",type:"en"},
+    ],
+    sun:[
+      {time:"08:30",dur:150,name:"数学：本周错题复盘+补弱",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"数据结构刷题+LeetCode简单2-3道",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/机动1h补作业",type:"rest"},
+      {time:"19:00",dur:90,name:"英语复盘+规划下周任务",type:"en"},
+    ],
+  },
+
+  // ---- Phase 3: 第9-12周 (变动期) ----
+  3: {
+    name:"P3·第9-12周", weeks:[9,10,11,12],
+    mon:[
+      {time:"08:00",dur:240,name:"Qt高级编程",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:35,name:"碎片：背单词+阅读精读",type:"en"},
+      {time:"16:00",dur:100,name:"应用写作",type:"class",loc:"仁爱107"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（Qt高级难度增加）",type:"hw"},
+      {time:"20:40",dur:60,name:"英语：单词复习+阅读精读1篇",type:"en"},
+      {time:"22:00",dur:0,name:"休息",type:"rest"},
+    ],
+    tue:[
+      {time:"08:00",dur:240,name:"数据库应用开发",type:"class",loc:"四维东214-1"},
+      {time:"14:00",dur:220,name:"综合实训-1",type:"class",loc:"四维东202"},
+      {time:"18:00",dur:90,name:"晚饭+休息（全天满课很累）",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（数据库/实训）",type:"hw"},
+      {time:"20:40",dur:60,name:"408数据结构（减负1h）",type:"ds"},
+      {time:"22:00",dur:0,name:"早点睡，周三上午补数学",type:"rest"},
+    ],
+    wed:[
+      {time:"09:00",dur:150,name:"数学：高数听课+刷题（黄金时段）",type:"math"},
+      {time:"12:00",dur:90,name:"午饭+午休",type:"rest"},
+      {time:"14:00",dur:100,name:"Qt高级编程",type:"class",loc:"四维东214-1"},
+      {time:"16:00",dur:100,name:"综合实训-1",type:"class",loc:"四维东202"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（Qt/实训）",type:"hw"},
+      {time:"20:40",dur:100,name:"英语：单词+阅读精读2篇",type:"en"},
+    ],
+    thu:[
+      {time:"09:00",dur:60,name:"写AI大模型作业（前置）",type:"hw"},
+      {time:"10:00",dur:90,name:"数学：线代听课/刷题",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+午休蓄能",type:"rest"},
+      {time:"14:00",dur:220,name:"AI大模型应用开发",type:"class",loc:"仁爱214"},
+      {time:"18:00",dur:80,name:"晚饭+休息",type:"rest"},
+      {time:"20:40",dur:60,name:"408数据结构轻量复习",type:"ds"},
+      {time:"22:00",dur:0,name:"休息",type:"rest"},
+    ],
+    fri:[
+      {time:"08:00",dur:240,name:"C++高级开发",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:90,name:"408数据结构手写算法/刷题",type:"ds"},
+      {time:"16:00",dur:120,name:"休息/碎片背单词",type:"rest"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（C++）",type:"hw"},
+      {time:"20:40",dur:100,name:"轮换：数学/数据结构",type:"math"},
+    ],
+    sat:[
+      {time:"08:30",dur:180,name:"数学：高数/线代听课+刷题",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"408数据结构课本+手写算法",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/自由",type:"rest"},
+      {time:"19:00",dur:120,name:"英语阅读精读+单词复盘",type:"en"},
+    ],
+    sun:[
+      {time:"08:30",dur:180,name:"数学：本周错题复盘（+30min补偿周二）",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"数据结构刷题+LeetCode简单2-3道",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/机动",type:"rest"},
+      {time:"19:00",dur:90,name:"英语复盘+规划下周",type:"en"},
+    ],
+  },
+
+  // ---- Phase 4: 第13-16周 (冲刺期) ----
+  4: {
+    name:"P4·第13-16周", weeks:[13,14,15,16],
+    mon:[
+      {time:"08:00",dur:240,name:"Qt高级编程",type:"class",loc:"四维东214-1"},
+      {time:"14:30",dur:90,name:"408数据结构刷题（下午空闲）",type:"ds"},
+      {time:"16:00",dur:100,name:"应用写作·仅第13周（14周后此处为408刷题）",type:"class",loc:"仁爱107"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业",type:"hw"},
+      {time:"20:40",dur:80,name:"英语：阅读+单词",type:"en"},
+    ],
+    tue:[
+      {time:"09:00",dur:180,name:"数学：高数/线代（上午全空！）",type:"math"},
+      {time:"12:00",dur:90,name:"午饭+午休",type:"rest"},
+      {time:"14:00",dur:220,name:"综合实训-1",type:"class",loc:"四维东202"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业（实训）",type:"hw"},
+      {time:"20:40",dur:100,name:"408数据结构",type:"ds"},
+    ],
+    wed:[
+      {time:"09:00",dur:150,name:"数学：高数听课+刷题",type:"math"},
+      {time:"12:00",dur:90,name:"午饭+午休",type:"rest"},
+      {time:"14:00",dur:100,name:"Qt高级编程",type:"class",loc:"四维东214-1"},
+      {time:"16:00",dur:100,name:"综合实训-1",type:"class",loc:"四维东202"},
+      {time:"18:00",dur:90,name:"晚饭+休息",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业",type:"hw"},
+      {time:"20:40",dur:100,name:"英语：单词+阅读精读",type:"en"},
+    ],
+    thu:[
+      {time:"09:00",dur:150,name:"数学：线代（上午全空！AI已结课）",type:"math"},
+      {time:"11:00",dur:60,name:"408数据结构",type:"ds"},
+      {time:"12:00",dur:90,name:"午饭+午休",type:"rest"},
+      {time:"14:00",dur:120,name:"408数据结构刷题（下午也空）",type:"ds"},
+      {time:"16:00",dur:180,name:"休息/碎片背单词",type:"rest"},
+      {time:"19:30",dur:60,name:"写作业",type:"hw"},
+      {time:"20:40",dur:80,name:"英语：阅读+单词",type:"en"},
+    ],
+    fri:[
+      {time:"09:00",dur:180,name:"数学：高数/线代（全天无课！）",type:"math"},
+      {time:"12:00",dur:90,name:"午饭+午休",type:"rest"},
+      {time:"14:00",dur:150,name:"408数据结构刷题",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/自由",type:"rest"},
+      {time:"19:00",dur:120,name:"英语阅读精读+单词",type:"en"},
+    ],
+    sat:[
+      {time:"08:30",dur:180,name:"数学：高数/线代听课+刷题",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"408数据结构课本+手写算法",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/自由",type:"rest"},
+      {time:"19:00",dur:120,name:"英语阅读精读+单词复盘",type:"en"},
+    ],
+    sun:[
+      {time:"08:30",dur:180,name:"数学：本周错题复盘",type:"math"},
+      {time:"12:00",dur:120,name:"午饭+休息",type:"rest"},
+      {time:"14:00",dur:150,name:"数据结构刷题+LeetCode",type:"ds"},
+      {time:"16:30",dur:150,name:"休息/机动",type:"rest"},
+      {time:"19:00",dur:120,name:"英语复盘+规划下周",type:"en"},
+    ],
+  },
+};
+
+// Tomorrow prep suggestions by day
+const PREP_SUGGESTIONS = {
+  mon:["检查Qt作业是否完成","应用写作课前预习","碎片时间背50个单词"],
+  tue:["检查数据库实验报告","数据结构笔记整理","碎片时间背单词"],
+  wed:["Qt课后整理笔记","数学错题标记","碎片时间背单词"],
+  thu:["AI大模型作业前置完成（上午）","数学线代笔记整理","碎片时间背单词"],
+  fri:["C++作业检查","本周课程作业全部收尾","碎片时间背单词"],
+  sat:["本周所有作业必须今天前完成","数学本周错题整理","英语阅读精读2篇"],
+  sun:["检查本周考研总时长≥23h","写下周计划","整理错题本"],
+};
+
+// ============================================================
+//  STATE
+// ============================================================
+let state = {
+  currentPhase: 2,
+  currentPage: 'today',
+  selectedWeekDay: -1, // -1 = today
+  settings: {
+    notify: true,
+    sound: true,
+    autoPhase: true,
+    semesterStart: '',
+  },
+  logs: [], // {date, title, tags:[], content}
+  timeEntries: [], // {id, date, subject, minutes, note}
+  notifiedTasks: {}, // track which tasks already notified
+};
+
+const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+const DAY_NAMES = ['周日','周一','周二','周三','周四','周五','周六'];
+const DAY_NAMES_FULL = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+
+const TYPE_LABELS = {
+  class:'上课', math:'数学', ds:'408', en:'英语', hw:'作业', rest:'休息/机动', free:'空闲'
+};
+const TYPE_ICONS = {
+  class:'🏫', math:'📐', ds:'🌳', en:'📖', hw:'✏️', rest:'☕', free:'⚪'
+};
+
+// ============================================================
+//  STORAGE
+// ============================================================
+function saveState(){
+  try{
+    localStorage.setItem('scheduleApp_state', JSON.stringify(state));
+  }catch(e){ console.warn('Save failed', e); }
+}
+function loadState(){
+  try{
+    const s = localStorage.getItem('scheduleApp_state');
+    if(s){
+      const loaded = JSON.parse(s);
+      // Deep merge: preserve default keys that loaded state doesn't have
+      state = {
+        ...state,
+        ...loaded,
+        settings: {
+          ...state.settings,
+          ...(loaded.settings || {}),
+        },
+      };
+    }
+  }catch(e){ console.warn('Load failed', e); }
+  // Default semester start: 2026-08-31 (Monday of week 1)
+  // Also migrate old default 2026-09-07 -> 2026-08-31
+  if(!state.settings.semesterStart || state.settings.semesterStart === '2026-09-07'){
+    state.settings.semesterStart = '2026-08-31';
+  }
+}
+
+// ============================================================
+//  CLOCK & TIME
+// ============================================================
+function getNow(){
+  return new Date();
+}
+function timeToMinutes(t){
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+function minutesToStr(min){
+  const h = Math.floor(min/60);
+  const m = min%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function getDayKey(date){
+  return DAY_KEYS[date.getDay()];
+}
+function formatLogDate(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function updateClock(){
+  const now = getNow();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clockTime').textContent = `${h}:${m}:${s}`;
+  
+  const dayName = DAY_NAMES_FULL[now.getDay()];
+  const month = now.getMonth()+1;
+  const date = now.getDate();
+  document.getElementById('clockDate').textContent = `${month}月${date}日 ${dayName}`;
+  
+  updateCurrentTask();
+  updateWeekProgress();
+}
+
+// ============================================================
+//  CURRENT TASK
+// ============================================================
+function getCurrentAndNextTask(){
+  const now = getNow();
+  const dayKey = getDayKey(now);
+  const phase = SCHEDULES[state.currentPhase];
+  const schedule = phase[dayKey];
+  if(!schedule) return {current:null, next:null, countdown:''};
+  
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  let current = null, next = null;
+  
+  for(let i=0; i<schedule.length; i++){
+    const task = schedule[i];
+    const start = timeToMinutes(task.time);
+    const end = start + task.dur;
+    
+    if(nowMin >= start && nowMin < end){
+      current = {...task, endMin: end, index:i};
+      // Find next non-rest task
+      for(let j=i+1; j<schedule.length; j++){
+        if(schedule[j].type !== 'rest'){
+          next = schedule[j];
+          break;
+        }
+      }
+      if(!next && i+1 < schedule.length) next = schedule[i+1];
+      break;
+    } else if(nowMin < start && !current){
+      next = task;
+      break;
+    }
+  }
+  
+  return {current, next};
+}
+
+function updateCurrentTask(){
+  const {current, next} = getCurrentAndNextTask();
+  const now = getNow();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+
+  const iconEl = document.getElementById('currentTaskIcon');
+  const nameEl = document.getElementById('currentTaskName');
+  const cdEl = document.getElementById('currentTaskCountdown');
+  const timerEl = document.getElementById('currentTaskTimer');
+
+  if(current){
+    iconEl.textContent = TYPE_ICONS[current.type] || '🎯';
+    nameEl.textContent = current.name;
+    const remain = current.endMin - nowMin;
+    cdEl.textContent = `还剩 ${remain} 分钟`;
+    timerEl.textContent = `${remain}m`;
+  } else if(next){
+    iconEl.textContent = TYPE_ICONS[next.type] || '⏳';
+    nameEl.textContent = '即将：' + next.name;
+    const waitMin = timeToMinutes(next.time) - nowMin;
+    if(waitMin > 0){
+      cdEl.textContent = `${minutesToStr(nowMin)} → ${next.time}，${waitMin}分钟后开始`;
+      timerEl.textContent = `${waitMin}m`;
+    }
+  } else {
+    iconEl.textContent = '😴';
+    nameEl.textContent = '当前无安排';
+    cdEl.textContent = '自由活动时间';
+    timerEl.textContent = '--';
+  }
+
+  // Check notifications for ALL tasks (not just current)
+  checkAllNotifications();
+}
+
+// ============================================================
+//  NOTIFICATIONS
+// ============================================================
+let notifiedKeys = {};
+
+function checkAllNotifications(){
+  if(!state.settings.notify) return;
+  const now = getNow();
+  const todayKey = formatLogDate(now);
+  const dayKey = getDayKey(now);
+  const phase = SCHEDULES[state.currentPhase];
+  const schedule = phase[dayKey];
+  if(!schedule) return;
+
+  const nowMin = now.getHours()*60 + now.getMinutes();
+
+  for(const task of schedule){
+    if(task.type === 'rest') continue;
+    const taskStart = timeToMinutes(task.time);
+    const taskKey = `${todayKey}_${task.time}_${task.name}`;
+
+    // 5-minute pre-notification (wider window: entire 5min range, not just 1min)
+    const pre5Key = taskKey + '_pre5';
+    if(!notifiedKeys[pre5Key] && nowMin >= taskStart - 5 && nowMin < taskStart){
+      notifiedKeys[pre5Key] = true;
+      showNotification('5分钟后开始', `${task.time} ${task.name}`);
+    }
+
+    // Task start notification (notify any time during the task if not yet notified)
+    const taskEnd = taskStart + (task.dur > 0 ? task.dur : 15);
+    if(!notifiedKeys[taskKey] && nowMin >= taskStart && nowMin < taskEnd){
+      notifiedKeys[taskKey] = true;
+      showNotification(task.name, `${task.time} 开始：${TYPE_LABELS[task.type] || ''}`);
+      if(state.settings.sound) playBeep();
+    }
+  }
+}
+
+function showNotification(title, body){
+  // Browser notification (for background / desktop)
+  if('Notification' in window && Notification.permission === 'granted'){
+    const n = new Notification(title, {
+      body: body,
+      tag: 'schedule-' + Date.now()
+    });
+    setTimeout(()=> n.close(), 10000);
+  }
+
+  // In-app modal popup (centered, harder to miss on mobile)
+  const overlay = document.createElement('div');
+  overlay.className = 'notification-overlay';
+  overlay.innerHTML = `
+    <div class="notification">
+      <div class="title">${title}</div>
+      <div class="body">${body}</div>
+      <button class="close">知道了</button>
+    </div>
+  `;
+  overlay.querySelector('.close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  // Vibrate on mobile
+  if(navigator.vibrate) navigator.vibrate([200,100,200]);
+  setTimeout(()=> { if(overlay.parentNode) overlay.remove(); }, 30000);
+}
+
+function playBeep(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if(ctx.state === 'suspended') ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  }catch(e){}
+}
+
+function requestNotifyPermission(){
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+// ============================================================
+//  RENDER: TODAY
+// ============================================================
+function renderToday(){
+  const now = getNow();
+  const dayKey = getDayKey(now);
+  const phase = SCHEDULES[state.currentPhase];
+  const schedule = phase[dayKey];
+  
+  const dayName = DAY_NAMES_FULL[now.getDay()];
+  const month = now.getMonth()+1;
+  const date = now.getDate();
+  document.getElementById('todayTitle').textContent = `今日日程 · ${month}月${date}日 ${dayName} · ${phase.name}`;
+  
+  const container = document.getElementById('todayTimeline');
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  
+  if(!schedule){
+    container.innerHTML = '<div class="empty">今天没有安排</div>';
+    return;
+  }
+  
+  let html = '';
+  for(const task of schedule){
+    const start = timeToMinutes(task.time);
+    const end = start + task.dur;
+    const endTimeStr = task.dur > 0 ? minutesToStr(end) : '';
+    const isNow = nowMin >= start && nowMin < end;
+    const isDone = nowMin >= end && task.dur > 0;
+    const isUpcoming = nowMin < start;
+    
+    const cls = isNow ? 'now' : (isDone ? 'done' : (isUpcoming ? 'upcoming' : ''));
+    const tagCls = `tag-${task.type}`;
+    const tagLabel = TYPE_LABELS[task.type] || task.type;
+    const dotCls = `dot-${task.type}`;
+    const durStr = task.dur > 0 ? `${Math.floor(task.dur/60)>0 ? Math.floor(task.dur/60)+'h' : ''}${task.dur%60>0 ? task.dur%60+'min' : ''}` : '';
+    const locStr = task.loc ? ` <span style="color:var(--muted);font-size:11px">@${task.loc}</span>` : '';
+
+    html += `<div class="timeline-item ${cls}">
+      <div class="time-col">${task.time}${endTimeStr ? '<br><span style="font-size:11px;color:var(--muted)">→'+endTimeStr+'</span>' : ''}</div>
+      <div class="content-col">
+        <span class="subject-dot ${dotCls}"></span><span class="tag ${tagCls}">${tagLabel}</span>
+        ${task.name}${locStr}${durStr ? `<span class="duration">${durStr}</span>` : ''}
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ============================================================
+//  RENDER: TOMORROW
+// ============================================================
+function renderTomorrow(){
+  const tomorrow = new Date(getNow());
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dayKey = getDayKey(tomorrow);
+  const phase = SCHEDULES[state.currentPhase];
+  const schedule = phase[dayKey];
+  
+  const dayName = DAY_NAMES_FULL[tomorrow.getDay()];
+  const month = tomorrow.getMonth()+1;
+  const date = tomorrow.getDate();
+  document.getElementById('tomorrowDate').textContent = `${month}月${date}日 ${dayName} · ${phase.name}`;
+  
+  // Schedule preview
+  let schedHtml = '';
+  if(schedule){
+    for(const task of schedule){
+      const tagCls = `tag-${task.type}`;
+      const tagLabel = TYPE_LABELS[task.type] || task.type;
+      schedHtml += `<div class="timeline-item">
+        <div class="time-col">${task.time}</div>
+        <div class="content-col"><span class="tag ${tagCls}">${tagLabel}</span> ${task.name}</div>
+      </div>`;
+    }
+  }
+  document.getElementById('tomorrowSchedule').innerHTML = schedHtml || '<div class="empty">明天无安排</div>';
+  
+  // Prep suggestions
+  const dayIdx = tomorrow.getDay();
+  const prepKey = DAY_KEYS[dayIdx];
+  const suggestions = PREP_SUGGESTIONS[prepKey] || [];
+  
+  // Add custom prep from stored data
+  const prepKey2 = `prep_${formatLogDate(tomorrow)}`;
+  let customPrep = [];
+  try{
+    customPrep = JSON.parse(localStorage.getItem(prepKey2) || '[]');
+  }catch(e){}
+  
+  const allPrep = [...suggestions, ...customPrep];
+  let prepHtml = '';
+  for(let i=0; i<allPrep.length; i++){
+    const safeText = escapeHtml(allPrep[i]);
+    prepHtml += `<li class="prep-item">
+      <input type="checkbox" id="prep_${i}" onchange="savePrep('${formatLogDate(tomorrow)}', ${i}, this.checked)" ${isPrepDone(formatLogDate(tomorrow), i) ? 'checked' : ''}>
+      <label for="prep_${i}">${safeText}</label>
+    </li>`;
+  }
+  
+  // Add custom prep input
+  prepHtml += `<li class="prep-item" style="border:none;margin-top:8px">
+    <input type="text" id="newPrepInput" placeholder="添加自定义准备项..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px" 
+    onkeydown="if(event.key==='Enter') addCustomPrep('${formatLogDate(tomorrow)}')">
+    <button onclick="addCustomPrep('${formatLogDate(tomorrow)}')" style="padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">添加</button>
+  </li>`;
+  
+  document.getElementById('tomorrowPrep').innerHTML = prepHtml;
+}
+
+function getPrepDoneKey(dateStr, idx){
+  return `prepDone_${dateStr}_${idx}`;
+}
+function isPrepDone(dateStr, idx){
+  return localStorage.getItem(getPrepDoneKey(dateStr, idx)) === '1';
+}
+function savePrep(dateStr, idx, done){
+  localStorage.setItem(getPrepDoneKey(dateStr, idx), done ? '1' : '0');
+}
+function addCustomPrep(dateStr){
+  const input = document.getElementById('newPrepInput');
+  const val = input.value.trim();
+  if(!val) return;
+  const key = `prep_${dateStr}`;
+  let arr = [];
+  try{ arr = JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){}
+  arr.push(val);
+  localStorage.setItem(key, JSON.stringify(arr));
+  input.value = '';
+  renderTomorrow();
+}
+
+// ============================================================
+//  RENDER: WEEK
+// ============================================================
+function renderWeek(){
+  const now = getNow();
+  const todayIdx = now.getDay();
+  
+  // Day tabs
+  let tabsHtml = '';
+  for(let i=0; i<7; i++){
+    const cls = i === state.selectedWeekDay ? 'active' : (i === todayIdx ? 'today' : '');
+    tabsHtml += `<button class="${cls}" onclick="selectWeekDay(${i})">${DAY_NAMES[i]}</button>`;
+  }
+  document.getElementById('weekDayTabs').innerHTML = tabsHtml;
+  
+  // Timeline
+  const dayIdx = state.selectedWeekDay >= 0 ? state.selectedWeekDay : todayIdx;
+  const dayKey = DAY_KEYS[dayIdx];
+  const phase = SCHEDULES[state.currentPhase];
+  const schedule = phase[dayKey];
+  
+  const nowMin = (dayIdx === todayIdx) ? now.getHours()*60 + now.getMinutes() : -1;
+  
+  let html = '';
+  if(schedule){
+    for(const task of schedule){
+      const start = timeToMinutes(task.time);
+      const end = start + task.dur;
+      const endTimeStr = task.dur > 0 ? minutesToStr(end) : '';
+      const isNow = nowMin >= 0 && nowMin >= start && nowMin < end;
+      const isDone = nowMin >= 0 && nowMin >= end && task.dur > 0;
+      
+      const cls = isNow ? 'now' : (isDone ? 'done' : '');
+      const tagCls = `tag-${task.type}`;
+      const tagLabel = TYPE_LABELS[task.type] || task.type;
+      const locStr = task.loc ? ` <span style="color:var(--muted);font-size:11px">@${task.loc}</span>` : '';
+      
+      html += `<div class="timeline-item ${cls}">
+        <div class="time-col">${task.time}${endTimeStr ? '<br><span style="font-size:11px;color:var(--muted)">→'+endTimeStr+'</span>' : ''}</div>
+        <div class="content-col">
+          <span class="tag ${tagCls}">${tagLabel}</span>
+          ${task.name}${locStr}
+        </div>
+      </div>`;
+    }
+  } else {
+    html = '<div class="empty">这天没有安排</div>';
+  }
+  document.getElementById('weekTimeline').innerHTML = html;
+}
+
+function selectWeekDay(idx){
+  state.selectedWeekDay = idx;
+  renderWeek();
+}
+
+// ============================================================
+//  RENDER: LOG
+// ============================================================
+let activeLogTags = [];
+
+function toggleLogTag(btn){
+  btn.classList.toggle('active');
+  const tag = btn.dataset.tag;
+  const idx = activeLogTags.indexOf(tag);
+  if(idx >= 0) activeLogTags.splice(idx, 1);
+  else activeLogTags.push(tag);
+}
+
+function saveLog(){
+  const content = document.getElementById('logContent').value.trim();
+  if(!content){
+    document.getElementById('logSavedHint').textContent = '请输入内容';
+    return;
+  }
+  const title = document.getElementById('logTitle').value.trim();
+  const dateSelect = document.getElementById('logDate');
+  const date = dateSelect.value || formatLogDate(getNow());
+  
+  const log = {
+    id: Date.now(),
+    date: date,
+    title: title,
+    tags: [...activeLogTags],
+    content: content,
+    savedAt: new Date().toISOString(),
+  };
+  
+  state.logs.unshift(log);
+  saveState();
+  
+  // Clear form
+  document.getElementById('logContent').value = '';
+  document.getElementById('logTitle').value = '';
+  activeLogTags = [];
+  document.querySelectorAll('.log-tag-btn').forEach(b => b.classList.remove('active'));
+  
+  document.getElementById('logSavedHint').textContent = '✓ 已保存';
+  setTimeout(()=> document.getElementById('logSavedHint').textContent = '', 3000);
+  
+  renderLogHistory();
+  renderStats();
+  renderHeatmap();
+  renderWeekBarChart();
+}
+
+function renderLogHistory(){
+  const container = document.getElementById('logHistory');
+  if(state.logs.length === 0){
+    container.innerHTML = '<div class="empty">还没有日志，开始记录吧</div>';
+    return;
+  }
+  
+  let html = '';
+  for(const log of state.logs){
+    const tagsHtml = log.tags.map(t => {
+      const tagColors = {数学:'#E84B3C','408':'#22C55E',英语:'#F59E0B',作业:'#EF4444',复盘:'#8B5CF6',其他:'#8A8A8A'};
+      const c = tagColors[t] || '#8A8A8A';
+      return `<span class="tag-mini" style="border-color:${c};color:${c};background:transparent">${t}</span>`;
+    }).join('');
+    
+    html += `<div class="log-entry">
+      <div class="meta">
+        <span class="date">${log.date}${log.title ? ' · ' + log.title : ''}</span>
+        <div class="tags">${tagsHtml}</div>
+        <button class="del" onclick="deleteLog(${log.id})">删除</button>
+      </div>
+      <div class="content">${escapeHtml(log.content)}</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function deleteLog(id){
+  if(!confirm('确定删除这条日志？')) return;
+  state.logs = state.logs.filter(l => l.id !== id);
+  saveState();
+  renderLogHistory();
+  renderStats();
+  renderHeatmap();
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// Load existing log for today
+function loadTodayLog(){
+  const today = formatLogDate(getNow());
+  const existing = state.logs.find(l => l.date === today);
+  if(existing){
+    document.getElementById('logContent').value = existing.content;
+    document.getElementById('logTitle').value = existing.title || '';
+    activeLogTags = [...(existing.tags || [])];
+    document.querySelectorAll('.log-tag-btn').forEach(btn => {
+      if(activeLogTags.includes(btn.dataset.tag)) btn.classList.add('active');
+    });
+    document.getElementById('logSavedHint').textContent = '已加载今日草稿';
+  }
+}
+
+// Populate log date dropdown
+function populateLogDates(){
+  const select = document.getElementById('logDate');
+  const today = formatLogDate(getNow());
+  let dates = [today];
+  for(let i=1; i<=7; i++){
+    const d = new Date(getNow());
+    d.setDate(d.getDate() - i);
+    dates.push(formatLogDate(d));
+  }
+  select.innerHTML = dates.map(d => {
+    const isToday = d === today;
+    return `<option value="${d}">${isToday ? '今天' : d}</option>`;
+  }).join('');
+}
+
+// ============================================================
+//  TIME ENTRIES (manual study time recording)
+// ============================================================
+function addTimeEntry(){
+  const date = document.getElementById('timeDate').value;
+  const subject = document.getElementById('timeSubject').value;
+  const minutes = parseInt(document.getElementById('timeMinutes').value, 10);
+  const note = document.getElementById('timeNote').value.trim();
+
+  if(!date){
+    alert('请选择日期');
+    return;
+  }
+  if(!minutes || minutes < 5){
+    alert('请输入有效时长（至少5分钟）');
+    return;
+  }
+
+  const entry = {
+    id: Date.now(),
+    date: date,
+    subject: subject, // math, ds, en
+    minutes: minutes,
+    note: note,
+  };
+
+  state.timeEntries.unshift(entry);
+  saveState();
+
+  // Clear inputs
+  document.getElementById('timeMinutes').value = '';
+  document.getElementById('timeNote').value = '';
+
+  renderTimeEntryList();
+  renderStats();
+  renderHeatmap();
+}
+
+function deleteTimeEntry(id){
+  if(!confirm('删除这条记录？')) return;
+  state.timeEntries = state.timeEntries.filter(e => e.id !== id);
+  saveState();
+  renderTimeEntryList();
+  renderStats();
+  renderHeatmap();
+}
+
+function renderTimeEntryList(){
+  const container = document.getElementById('timeEntryList');
+  if(state.timeEntries.length === 0){
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">还没有记录，填写上方表单添加</div>';
+    return;
+  }
+
+  const subjectLabels = {math:'数学', ds:'408', en:'英语'};
+  const subjectColors = {math:'#E84B3C', ds:'#22C55E', en:'#F59E0B'};
+
+  const entries = state.timeEntries.slice(0, 20);
+  let html = '';
+  for(const e of entries){
+    const c = subjectColors[e.subject] || '#8A8A8A';
+    const label = subjectLabels[e.subject] || e.subject;
+    const hours = (e.minutes / 60).toFixed(1);
+    const noteStr = e.note ? ' · ' + escapeHtml(e.note) : '';
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--muted);width:85px;font-variant-numeric:tabular-nums">${e.date}</span>
+      <span style="border:1px solid ${c};color:${c};font-size:10px;padding:2px 8px;border-radius:999px;font-weight:500;background:transparent">${label}</span>
+      <span style="font-size:14px;font-weight:300;color:var(--text);font-variant-numeric:tabular-nums">${hours}h</span>
+      <span style="font-size:12px;color:var(--muted);flex:1">${noteStr}</span>
+      <button onclick="deleteTimeEntry(${e.id})" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer">删除</button>
+    </div>`;
+  }
+  if(state.timeEntries.length > 20){
+    html += `<div style="text-align:center;padding:8px;font-size:12px;color:var(--muted)">仅显示最近20条，共${state.timeEntries.length}条</div>`;
+  }
+  container.innerHTML = html;
+}
+
+function initTimeDate(){
+  document.getElementById('timeDate').value = formatLogDate(getNow());
+}
+
+// ============================================================
+//  RENDER: STATS
+// ============================================================
+function renderStats(){
+  const now = getNow();
+  const todayKey = formatLogDate(now);
+
+  // Week start (Sunday)
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0,0,0,0);
+
+  let mathMin=0, dsMin=0, enMin=0;
+
+  // Only count manual time entries
+  for(const e of state.timeEntries){
+    const eDate = new Date(e.date + 'T00:00:00');
+    eDate.setHours(0,0,0,0);
+    if(eDate >= weekStart){
+      if(e.subject === 'math') mathMin += e.minutes;
+      if(e.subject === 'ds') dsMin += e.minutes;
+      if(e.subject === 'en') enMin += e.minutes;
+    }
+  }
+
+  document.getElementById('statMath').textContent = (mathMin/60).toFixed(1) + 'h';
+  document.getElementById('statDS').textContent = (dsMin/60).toFixed(1) + 'h';
+  document.getElementById('statEN').textContent = (enMin/60).toFixed(1) + 'h';
+
+  // Detail
+  const total = mathMin + dsMin + enMin;
+  const target = state.currentPhase === 4 ? 30*60 : 26*60;
+  const pct = target > 0 ? Math.min(100, (total/target)*100).toFixed(0) : 0;
+  document.getElementById('statsDetail').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding:8px 0;border-top:1px solid var(--border)">
+      <span style="font-size:13px;color:var(--muted)">本周总时长</span>
+      <span style="font-size:24px;font-weight:300;color:var(--text);font-variant-numeric:tabular-nums">${(total/60).toFixed(1)}h <span style="font-size:13px;color:var(--muted)">/ ${target/60}h</span></span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">完成度 ${pct}% · 仅统计手动录入</div>
+  `;
+  renderWeekBarChart();
+  updateWeekProgressMini();
+}
+
+function renderHeatmap(){
+  const container = document.getElementById('heatmap');
+  let html = '';
+  const now = getNow();
+
+  for(let i=29; i>=0; i--){
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = formatLogDate(d);
+
+    // Sum manual time entries for this day
+    const dayMinutes = state.timeEntries
+      .filter(e => e.date === dateStr)
+      .reduce((sum, e) => sum + e.minutes, 0);
+
+    // Also check if there's a log entry
+    const hasLog = state.logs.some(l => l.date === dateStr);
+
+    // Level based on total minutes (0-4)
+    let level = 0;
+    if(dayMinutes >= 240) level = 4;       // 4h+
+    else if(dayMinutes >= 120) level = 3;  // 2h+
+    else if(dayMinutes >= 60) level = 2;   // 1h+
+    else if(dayMinutes > 0 || hasLog) level = 1;
+
+    const colors = ['#E8E8E8','#FAD3CF','#F5A89F','#EF6B5E','#E84B3C'];
+    const bg = colors[level];
+
+    const month = d.getMonth()+1;
+    const date = d.getDate();
+    const dayName = DAY_NAMES[d.getDay()];
+    
+    html += `<div title="${dateStr} ${dayName} 学习${(dayMinutes/60).toFixed(1)}h" style="width:28px;height:28px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${level>1?'#fff':'#8A8A8A'}">${date}</div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ============================================================
+//  WEEK PROGRESS
+// ============================================================
+function updateWeekProgress(){
+  const now = getNow();
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0,0,0,0);
+  
+  let totalMin = 0;
+
+  // Only count manual time entries this week
+  for(const e of state.timeEntries){
+    const eDate = new Date(e.date + 'T00:00:00');
+    eDate.setHours(0,0,0,0);
+    if(eDate >= weekStart){
+      totalMin += e.minutes;
+    }
+  }
+  
+  const target = state.currentPhase === 4 ? 30*60 : 26*60;
+  const pct = target > 0 ? Math.min(100, (totalMin/target)*100).toFixed(0) : 0;
+  
+  document.getElementById('weekProgress').style.width = pct + '%';
+  document.getElementById('weekDone').textContent = `${(totalMin/60).toFixed(1)}h / ${(target/60).toFixed(0)}h`;
+  document.getElementById('weekPct').textContent = pct + '%';
+}
+
+// ============================================================
+//  PHASE & AUTO-DETECT
+// ============================================================
+function setPhase(p){
+  state.currentPhase = p;
+  saveState();
+  document.querySelectorAll('.phase-bar button').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('phase-p' + p);
+  if(btn) btn.classList.add('active');
+  renderToday();
+  renderWeek();
+  updateCurrentTask();
+}
+
+function detectPhase(){
+  const now = getNow();
+  // Parse as local time to avoid UTC offset issues
+  const start = new Date(state.settings.semesterStart + 'T00:00:00');
+  const diffMs = now - start;
+  const diffDays = Math.floor(diffMs / (1000*60*60*24));
+  const weekNum = Math.floor(diffDays / 7) + 1;
+
+  // Update week number display in settings
+  const weekNumEl = document.getElementById('currentWeekNum');
+  if(weekNumEl) weekNumEl.textContent = weekNum > 0 ? `第${weekNum}周` : '未开始';
+
+  // Update the week indicator on today page
+  const indicator = document.getElementById('weekIndicator');
+  if(indicator){
+    if(weekNum <= 0){
+      indicator.innerHTML = `📅 学期尚未开始（起始日：${state.settings.semesterStart}）`;
+    } else if(weekNum > 16){
+      indicator.innerHTML = `📅 第${weekNum}周 · 学期已结束`;
+    } else {
+      const phaseNames = {1:'P1·第1周（起始周）',2:'P2·第2-8周（稳定期）',3:'P3·第9-12周（变动期）',4:'P4·第13-16周（冲刺期）'};
+      const phase = weekNum <= 1 ? 1 : weekNum <= 8 ? 2 : weekNum <= 12 ? 3 : 4;
+      indicator.innerHTML = `📅 当前：<b style="color:var(--accent)">${phaseNames[phase]}</b> · 第${weekNum}周`;
+    }
+  }
+
+  if(!state.settings.autoPhase) return;
+  if(weekNum <= 0) return;
+  if(weekNum <= 1) setPhase(1);
+  else if(weekNum <= 8) setPhase(2);
+  else if(weekNum <= 12) setPhase(3);
+  else setPhase(4);
+}
+
+function updateWeekNum(){
+  detectPhase();
+}
+
+// ============================================================
+//  SETTINGS
+// ============================================================
+function toggleNotify(cb){
+  state.settings.notify = cb.checked;
+  if(cb.checked) requestNotifyPermission();
+  saveState();
+}
+function toggleSound(cb){
+  state.settings.sound = cb.checked;
+  saveState();
+}
+function toggleAutoPhase(cb){
+  state.settings.autoPhase = cb.checked;
+  saveState();
+  if(cb.checked) detectPhase();
+}
+function saveSemesterStart(input){
+  state.settings.semesterStart = input.value;
+  saveState();
+  detectPhase();
+}
+
+function exportData(){
+  const data = {
+    state: state,
+    prepItems: {},
+    prepDone: {},
+  };
+  for(let i=localStorage.length-1; i>=0; i--){
+    const key = localStorage.key(i);
+    if(key && key.startsWith('prep_') && !key.startsWith('prepDone_')){
+      data.prepItems[key] = localStorage.getItem(key);
+    }
+    if(key && key.startsWith('prepDone_')){
+      data.prepDone[key] = localStorage.getItem(key);
+    }
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `日程管理_备份_${formatLogDate(getNow())}.json`;
+  a.click();
+}
+
+function importData(){
+  document.getElementById('importFile').click();
+}
+function handleImport(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(data.state){
+        state = data.state;
+        saveState();
+      }
+      if(data.prepItems){
+        for(const k in data.prepItems) localStorage.setItem(k, data.prepItems[k]);
+      }
+      if(data.prepDone){
+        for(const k in data.prepDone) localStorage.setItem(k, data.prepDone[k]);
+      }
+      alert('导入成功！');
+      location.reload();
+    }catch(err){
+      alert('导入失败：' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================================
+//  STUDY TIMER
+// ============================================================
+let timerState = {
+  running: false,
+  paused: false,
+  startTs: null,       // timestamp when started
+  accumulated: 0,      // accumulated seconds (before current run)
+  subject: 'math',
+  pomoMode: false,
+  pomoPhase: 'work',   // 'work' or 'break'
+  pomoWorkMin: 25,
+  pomoBreakMin: 5,
+};
+
+function loadTimerState(){
+  try{
+    const s = localStorage.getItem('scheduleApp_timer');
+    if(s){
+      timerState = {...timerState, ...JSON.parse(s)};
+    }
+  }catch(e){}
+}
+function saveTimerState(){
+  try{
+    localStorage.setItem('scheduleApp_timer', JSON.stringify(timerState));
+  }catch(e){}
+}
+
+function formatTimerDisplay(secs){
+  const h = Math.floor(secs/3600);
+  const m = Math.floor((secs%3600)/60);
+  const s = Math.floor(secs%60);
+  return [String(h).padStart(2,'0'), String(m).padStart(2,'0'), String(s).padStart(2,'0')].join(':');
+}
+
+function getElapsedSecs(){
+  if(!timerState.running || timerState.paused) return timerState.accumulated;
+  return timerState.accumulated + Math.floor((Date.now() - timerState.startTs)/1000);
+}
+
+function updateTimerDisplay(){
+  const secs = getElapsedSecs();
+  document.getElementById('timerDisplay').textContent = formatTimerDisplay(secs);
+  updateTimerRing(secs);
+
+  // Pomodoro check
+  if(timerState.pomoMode && timerState.running && !timerState.paused){
+    const totalWorkSecs = timerState.pomoWorkMin * 60;
+    const totalBreakSecs = timerState.pomoBreakMin * 60;
+    if(timerState.pomoPhase === 'work' && secs >= totalWorkSecs){
+      // Work session done, start break
+      timerState.pomoPhase = 'break';
+      timerState.accumulated = 0;
+      timerState.startTs = Date.now();
+      saveTimerState();
+      showNotification('番茄完成', '学习25分钟，休息5分钟');
+      if(state.settings.sound) playBeep();
+      const ps = document.getElementById('pomoStatus');
+      ps.style.display = '';
+      ps.textContent = '休息中 · 5分钟';
+    } else if(timerState.pomoPhase === 'break' && secs >= totalBreakSecs){
+      // Break done, auto-start next work session
+      timerState.pomoPhase = 'work';
+      timerState.accumulated = 0;
+      timerState.startTs = Date.now();
+      saveTimerState();
+      showNotification('休息结束', '开始下一个番茄钟');
+      if(state.settings.sound) playBeep();
+      const ps = document.getElementById('pomoStatus');
+      ps.style.display = '';
+      ps.textContent = '学习中 · 25分钟';
+    }
+  }
+}
+
+function timerStart(){
+  timerState.subject = document.getElementById('timerSubject').value;
+  timerState.pomoMode = document.getElementById('pomoMode').checked;
+  if(!timerState.running){
+    timerState.running = true;
+    timerState.paused = false;
+    timerState.startTs = Date.now();
+    timerState.accumulated = 0;
+    timerState.pomoPhase = 'work';
+  } else if(timerState.paused){
+    timerState.paused = false;
+    timerState.startTs = Date.now();
+  }
+  saveTimerState();
+  updateTimerButtons();
+  if(timerState.pomoMode){
+    const ps = document.getElementById('pomoStatus');
+    ps.style.display = '';
+    ps.textContent = timerState.pomoPhase === 'work' ? '学习中 · 25分钟' : '休息中 · 5分钟';
+  }
+}
+
+function timerPause(){
+  if(timerState.running && !timerState.paused){
+    timerState.accumulated = getElapsedSecs();
+    timerState.paused = true;
+    saveTimerState();
+    updateTimerButtons();
+  } else if(timerState.paused){
+    timerState.paused = false;
+    timerState.startTs = Date.now();
+    saveTimerState();
+    updateTimerButtons();
+  }
+}
+
+function timerStop(){
+  if(!timerState.running) return;
+  const elapsed = getElapsedSecs();
+  const minutes = Math.round(elapsed / 60);
+
+  if(minutes >= 5){
+    // Auto-create time entry
+    const entry = {
+      id: Date.now(),
+      date: formatLogDate(getNow()),
+      subject: timerState.subject,
+      minutes: minutes,
+      note: timerState.pomoMode ? '番茄钟' : '计时器',
+    };
+    state.timeEntries.unshift(entry);
+    saveState();
+    showNotification('已记录', `${minutes}分钟已添加到统计`);
+    if(state.settings.sound) playBeep();
+  } else if(elapsed > 0){
+    if(confirm(`只学了${minutes}分钟（不足5分钟），是否仍记录？`)){
+      const entry = {
+        id: Date.now(),
+        date: formatLogDate(getNow()),
+        subject: timerState.subject,
+        minutes: Math.max(5, minutes),
+        note: '计时器',
+      };
+      state.timeEntries.unshift(entry);
+      saveState();
+    }
+  }
+
+  // Reset timer
+  timerState.running = false;
+  timerState.paused = false;
+  timerState.accumulated = 0;
+  timerState.startTs = null;
+  timerState.pomoPhase = 'work';
+  saveTimerState();
+
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('pomoStatus').style.display = 'none';
+  updateTimerButtons();
+  renderStreak();
+  renderStats();
+  renderHeatmap();
+  if(state.currentPage === 'stats') renderTimeEntryList();
+}
+
+function togglePomo(cb){
+  if(cb.checked && !timerState.running){
+    document.getElementById('pomoStatus').style.display = '';
+    document.getElementById('pomoStatus').textContent = '番茄模式 · 25分钟学习 + 5分钟休息';
+  } else if(!cb.checked){
+    document.getElementById('pomoStatus').style.display = 'none';
+  }
+}
+
+function updateTimerButtons(){
+  const startBtn = document.getElementById('timerStart');
+  const pauseBtn = document.getElementById('timerPause');
+  const stopBtn = document.getElementById('timerStop');
+  const card = document.getElementById('timerCard');
+
+  if(timerState.running && !timerState.paused){
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = '';
+    stopBtn.style.display = '';
+    pauseBtn.textContent = '⏸ 暂停';
+    card.classList.add('timer-card-active');
+  } else if(timerState.paused){
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = '';
+    stopBtn.style.display = '';
+    pauseBtn.textContent = '▶ 继续';
+    card.classList.add('timer-card-active');
+  } else {
+    startBtn.style.display = '';
+    pauseBtn.style.display = 'none';
+    stopBtn.style.display = 'none';
+    card.classList.remove('timer-card-active');
+  }
+}
+
+// Timer tick - runs every second, updates display regardless of current page
+setInterval(()=>{
+  if(timerState.running && !timerState.paused){
+    updateTimerDisplay();
+  }
+}, 1000);
+
+// ============================================================
+//  STREAK
+// ============================================================
+function getStudyDates(){
+  const dates = new Set();
+  for(const e of state.timeEntries){
+    dates.add(e.date);
+  }
+  for(const l of state.logs){
+    dates.add(l.date);
+  }
+  return dates;
+}
+
+function calculateStreak(){
+  const studyDates = getStudyDates();
+  const today = formatLogDate(getNow());
+  const todayStudied = studyDates.has(today);
+
+  // Walk backwards from today (or yesterday if today not studied yet)
+  let streak = 0;
+  let checkDate = new Date(getNow());
+
+  // If today not studied, start from yesterday
+  if(!todayStudied){
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  while(true){
+    const dateStr = formatLogDate(checkDate);
+    if(studyDates.has(dateStr)){
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  // Calculate longest streak
+  const sortedDates = Array.from(studyDates).sort();
+  let longest = 0;
+  let currentRun = 0;
+  let prevDate = null;
+  for(const d of sortedDates){
+    if(prevDate){
+      const diff = (new Date(d + 'T00:00:00') - new Date(prevDate + 'T00:00:00')) / (1000*60*60*24);
+      if(diff === 1){
+        currentRun++;
+      } else {
+        longest = Math.max(longest, currentRun);
+        currentRun = 1;
+      }
+    } else {
+      currentRun = 1;
+    }
+    prevDate = d;
+  }
+  longest = Math.max(longest, currentRun, streak);
+
+  // Check if streak is broken (yesterday not studied and today not studied)
+  const yesterday = new Date(getNow());
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = formatLogDate(yesterday);
+  const broken = !todayStudied && !studyDates.has(yesterdayStr) && streak === 0;
+
+  return {streak, longest, todayStudied, broken};
+}
+
+function renderStreak(){
+  const {streak, longest, todayStudied, broken} = calculateStreak();
+
+  // Sidebar version
+  const main = document.getElementById('streakMain');
+  const sub = document.getElementById('streakSub');
+  const best = document.getElementById('streakBest');
+  const box = document.getElementById('streakBox');
+
+  // Today page banner version
+  const bMain = document.getElementById('streakBannerMain');
+  const bSub = document.getElementById('streakBannerSub');
+  const bBest = document.getElementById('streakBannerBest');
+  const bBox = document.getElementById('streakBanner');
+
+  const streakText = `${streak}天连续`;
+  const bestText = `最高 ${longest}天`;
+
+  if(main) main.textContent = `${streak}天`;
+  if(bMain) bMain.textContent = streakText;
+  if(best) best.textContent = `最高纪录：${longest}天`;
+  if(bBest) bBest.textContent = bestText;
+
+  if(streak >= 3){
+    if(box) box.classList.add('hot');
+    if(bBox) bBox.classList.add('hot');
+  } else {
+    if(box) box.classList.remove('hot');
+    if(bBox) bBox.classList.remove('hot');
+  }
+
+  let subText, subColor;
+  if(todayStudied){
+    subText = '✅ 今日已打卡';
+    subColor = '#48bb78';
+  } else if(broken && streak === 0){
+    subText = '⚠️ 连续中断！今天需打卡';
+    subColor = '#f6ad55';
+  } else if(streak > 0){
+    subText = `今天还没打卡，别断了！`;
+    subColor = '#f6ad55';
+  } else {
+    subText = '今日未打卡';
+    subColor = '';
+  }
+
+  if(sub){ sub.textContent = subText; sub.style.color = subColor; }
+  if(bSub){ bSub.textContent = subText; }
+}
+
+// ============================================================
+//  CROSS-DEVICE SYNC
+// ============================================================
+function exportSyncCode(){
+  const data = {
+    state: state,
+    timerState: timerState,
+  };
+  try{
+    const json = JSON.stringify(data);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    document.getElementById('syncCodeOut').value = b64;
+    document.getElementById('syncCopiedHint').textContent = '✓ 已生成，点下方复制';
+  }catch(e){
+    document.getElementById('syncCodeOut').value = '生成失败：' + e.message;
+  }
+}
+
+function copySyncCode(){
+  const code = document.getElementById('syncCodeOut').value;
+  if(!code || code.startsWith('生成失败')){
+    document.getElementById('syncCopiedHint').textContent = '请先生成同步码';
+    return;
+  }
+  // Try clipboard API, fallback to select+copy
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(code).then(()=>{
+      document.getElementById('syncCopiedHint').textContent = '✓ 已复制到剪贴板';
+      setTimeout(()=> document.getElementById('syncCopiedHint').textContent = '', 3000);
+    }).catch(()=>{
+      document.getElementById('syncCodeOut').select();
+      document.execCommand('copy');
+      document.getElementById('syncCopiedHint').textContent = '✓ 已复制';
+      setTimeout(()=> document.getElementById('syncCopiedHint').textContent = '', 3000);
+    });
+  } else {
+    document.getElementById('syncCodeOut').select();
+    document.execCommand('copy');
+    document.getElementById('syncCopiedHint').textContent = '✓ 已复制';
+    setTimeout(()=> document.getElementById('syncCopiedHint').textContent = '', 3000);
+  }
+}
+
+function importSyncCode(){
+  const code = document.getElementById('syncCodeIn').value.trim();
+  if(!code){
+    document.getElementById('syncImportHint').textContent = '请粘贴同步码';
+    return;
+  }
+  try{
+    const json = decodeURIComponent(escape(atob(code)));
+    const data = JSON.parse(json);
+    if(!data.state){
+      throw new Error('同步码格式不正确');
+    }
+    if(!confirm('导入将覆盖当前所有数据，确定继续？')) return;
+
+    state = {...state, ...data.state};
+    if(data.timerState) timerState = {...timerState, ...data.timerState};
+    saveState();
+    saveTimerState();
+
+    document.getElementById('syncImportHint').textContent = '✓ 导入成功，刷新中...';
+    document.getElementById('syncImportHint').style.color = 'var(--green)';
+    setTimeout(()=> location.reload(), 1000);
+  }catch(e){
+    document.getElementById('syncImportHint').textContent = '导入失败：' + e.message;
+    document.getElementById('syncImportHint').style.color = 'var(--red)';
+  }
+}
+
+// ============================================================
+//  PAGE NAVIGATION
+// ============================================================
+function showPage(page){
+  state.currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.getElementById('page-' + page).style.display = '';
+  
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+  const pageMap = {today:0, tomorrow:1, week:2, log:3, stats:4, settings:5};
+  const navBtns = document.querySelectorAll('.nav button');
+  if(navBtns[pageMap[page]]) navBtns[pageMap[page]].classList.add('active');
+  // Sync bottom nav (skip 'week' which isn't in bottom nav)
+  const bnavMap = {today:0, tomorrow:1, log:2, stats:3, settings:4};
+  const bnavBtns = document.querySelectorAll('.bottom-nav button');
+  if(bnavBtns[bnavMap[page]]) bnavBtns[bnavMap[page]].classList.add('active');
+  
+  if(page === 'today') renderToday();
+  if(page === 'tomorrow') renderTomorrow();
+  if(page === 'week') renderWeek();
+  if(page === 'log'){ populateLogDates(); loadTodayLog(); renderLogHistory(); }
+  if(page === 'stats'){ initTimeDate(); renderTimeEntryList(); renderStats(); renderHeatmap(); }
+  if(page === 'settings'){
+    document.getElementById('setNotify').checked = state.settings.notify;
+    document.getElementById('setSound').checked = state.settings.sound;
+    document.getElementById('setAutoPhase').checked = state.settings.autoPhase;
+    document.getElementById('setSemesterStart').value = state.settings.semesterStart;
+    detectPhase();
+  }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+function init(){
+  loadState();
+  loadTimerState();
+  requestNotifyPermission();
+  detectPhase();
+
+  // Set default phase button
+  document.querySelectorAll('.phase-bar button').forEach(b => b.classList.remove('active'));
+  const phaseBtn = document.getElementById('phase-p' + state.currentPhase);
+  if(phaseBtn) phaseBtn.classList.add('active');
+
+  // Initial renders
+  renderToday();
+  renderStreak();
+  updateWeekProgressMini();
+  updateClock();
+
+  // Restore timer display if was running
+  if(timerState.running){
+    updateTimerDisplay();
+    updateTimerButtons();
+    document.getElementById('timerSubject').value = timerState.subject;
+    document.getElementById('pomoMode').checked = timerState.pomoMode;
+  }
+
+  // Catch up on missed notifications when page returns to foreground (mobile fix)
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden){
+      checkAllNotifications();
+    }
+  });
+
+  // Clock interval
+  setInterval(updateClock, 1000);
+
+  // Re-render today every 30 seconds (to update done/now states)
+  setInterval(()=>{
+    renderToday();
+    renderStreak();
+    updateWeekProgressMini();
+    if(state.currentPage === 'week') renderWeek();
+    if(state.currentPage === 'stats') renderStats();
+    if(state.currentPage === 'tomorrow') renderTomorrow();
+  }, 30000);
+
+  // Request notification permission on first interaction
+  document.body.addEventListener('click', function once(){
+    requestNotifyPermission();
+    document.body.removeEventListener('click', once);
+  });
+}
+
+// === Timer Ring ===
+function updateTimerRing(secs){
+  const ring = document.getElementById('timerRingFg');
+  if(!ring) return;
+  const C = 515.2;
+  let total;
+  if(timerState.pomoMode){
+    total = (timerState.pomoPhase === 'work' ? timerState.pomoWorkMin : timerState.pomoBreakMin) * 60;
+  } else {
+    total = 25 * 60;
+  }
+  const pct = total > 0 ? Math.min(1, secs / total) : 0;
+  ring.style.strokeDashoffset = C * (1 - pct);
+  if(timerState.pomoPhase === 'break'){
+    ring.style.stroke = 'var(--green)';
+  } else {
+    ring.style.stroke = 'var(--accent)';
+  }
+}
+
+// === Weekly Bar Chart ===
+function renderWeekBarChart(){
+  const container = document.getElementById('weekBarChart');
+  if(!container) return;
+  const now = getNow();
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0,0,0,0);
+  const days = ['日','一','二','三','四','五','六'];
+  const colors = {math:'#E84B3C', ds:'#22C55E', en:'#F59E0B'};
+  let maxMin = 1;
+  const dayMinutes = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(weekStart);
+    d.setDate(d.getDate()+i);
+    const dKey = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    let total = 0;
+    for(const e of state.timeEntries){
+      if(e.date === dKey) total += e.minutes;
+    }
+    dayMinutes.push(total);
+    if(total > maxMin) maxMin = total;
+  }
+  let html = '';
+  for(let i=0;i<7;i++){
+    const h = maxMin > 0 ? (dayMinutes[i]/maxMin)*100 : 0;
+    const hours = (dayMinutes[i]/60).toFixed(1);
+    const isToday = (i === now.getDay());
+    const bg = dayMinutes[i] > 0 ? 'var(--accent)' : '#F0EDE8';
+    html += `<div class="bar-col">
+      <div class="bar-val">${dayMinutes[i] > 0 ? hours+'h' : ''}</div>
+      <div class="bar" style="height:${h}%;background:${bg};opacity:${isToday ? 1 : 0.7}"></div>
+      <div class="bar-day" style="${isToday ? 'color:var(--accent);font-weight:600' : ''}">${days[i]}</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+// === Weekly Progress Mini ===
+function updateWeekProgressMini(){
+  const now = getNow();
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0,0,0,0);
+  let totalMin = 0;
+  for(const e of state.timeEntries){
+    const eDate = new Date(e.date + 'T00:00:00');
+    eDate.setHours(0,0,0,0);
+    if(eDate >= weekStart) totalMin += e.minutes;
+  }
+  const targetMin = state.currentPhase === 4 ? 30*60 : 26*60;
+  const hours = (totalMin/60).toFixed(1);
+  const targetH = targetMin/60;
+  const pct = Math.min(100, (totalMin/targetMin)*100);
+  const valEl = document.getElementById('weekMiniValue');
+  const fillEl = document.getElementById('weekMiniFill');
+  if(valEl) valEl.innerHTML = `${hours}h <span>/ ${targetH}h</span>`;
+  if(fillEl) fillEl.style.width = pct + '%';
+}
+
+init();
+</script>
+
+</body>
+</html>
